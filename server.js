@@ -3,8 +3,13 @@ dotenv.config({});
 
 import express from "express";
 import { google } from "googleapis";
+import cors from "cors";
+import bodyParser from "body-parser";
 
 const app = express();
+app.use(cors({}));
+// app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: false }));
 
 const PORT = process.env.NODE_PORT || 8000;
 
@@ -31,28 +36,35 @@ app.get("/google", (req, res) => {
     scope: scopes,
   });
 
-  res.redirect(url);
+  res.send(url);
+});
+
+app.post("/get-events", async (req, res) => {
+  try {
+    const code = Object.entries(req.body)[0][0].replace("/", "%");
+    console.log(code);
+    // if (code) {
+    //   const { tokens } = await oauth2client.getToken(code);
+    //   oauth2client.setCredentials(tokens);
+    //   console.log(tokens);
+    //   const response = await calendar.events.list({
+    //     calendarId: "primary",
+    //     timeMin: new Date().toISOString(),
+    //     maxResults: 10,
+    //     singleEvents: true,
+    //     orderBy: "startTime",
+    //   });
+    //   const events = response.data.items;
+    //   console.log({ events });
+    //   res.send({ msg: "You have logged in succesfully.", events });
+    // }
+  } catch (error) {
+    console.log({ error });
+  }
 });
 
 app.get("/google/redirect", async (req, res) => {
-  const code = req.query.code;
-
-  const { tokens } = await oauth2client.getToken(code);
-  oauth2client.setCredentials(tokens);
-
-  const response = await calendar.events.list({
-    calendarId: "primary",
-    timeMin: new Date().toISOString(),
-    maxResults: 10,
-    singleEvents: true,
-    orderBy: "startTime",
-  });
-
-  const events = response.data.items;
-
-  console.log({ events });
-
-  res.send({ msg: "You have logged in succesfully.", events });
+  res.redirect(`http://localhost:3000/calendar-events`);
 });
 
 app.listen(PORT, () => {
