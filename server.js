@@ -7,7 +7,7 @@ import cors from "cors";
 import bodyParser from "body-parser";
 
 const app = express();
-app.use(cors({}));
+app.use(cors());
 // app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
@@ -39,32 +39,51 @@ app.get("/google", (req, res) => {
   res.send(url);
 });
 
+// app.get("/google-calendar", async (req, res) => {
+//   const code = req.query.code;
+//   console.log("backend", code);
+
+//   const { tokens } = await oauth2client.getToken(code);
+
+//   oauth2client.setCredentials(tokens);
+//   console.log(tokens);
+//   const response = await calendar.events.list({
+//     calendarId: "primary",
+//     timeMin: new Date().toISOString(),
+//     maxResults: 10,
+//     singleEvents: true,
+//     orderBy: "startTime",
+//   });
+//   const events = response.data.items;
+//   console.log({ events });
+//   res.send({ msg: "You have logged in succesfully.", events });
+// });
+
 app.post("/get-events", async (req, res) => {
   try {
-    const code = Object.entries(req.body)[0][0].replace("/", "%");
-    console.log(code);
-    // if (code) {
-    //   const { tokens } = await oauth2client.getToken(code);
-    //   oauth2client.setCredentials(tokens);
-    //   console.log(tokens);
-    //   const response = await calendar.events.list({
-    //     calendarId: "primary",
-    //     timeMin: new Date().toISOString(),
-    //     maxResults: 10,
-    //     singleEvents: true,
-    //     orderBy: "startTime",
-    //   });
-    //   const events = response.data.items;
-    //   console.log({ events });
-    //   res.send({ msg: "You have logged in succesfully.", events });
-    // }
+    const code = Object.entries(req.body)[0][0];
+    if (code) {
+      const { tokens } = await oauth2client.getToken(code);
+      oauth2client.setCredentials(tokens);
+      console.log(tokens);
+      const response = await calendar.events.list({
+        calendarId: "primary",
+        timeMin: new Date().toISOString(),
+        maxResults: 10,
+        singleEvents: true,
+        orderBy: "startTime",
+      });
+      const events = response.data.items;
+      console.log({ events });
+      res.send({ msg: "You have logged in succesfully.", events });
+    }
   } catch (error) {
-    console.log({ error });
+    console.log(error.response.data);
   }
 });
 
 app.get("/google/redirect", async (req, res) => {
-  res.redirect(`http://localhost:3000/calendar-events`);
+  res.redirect(`http://localhost:3000/google-calendar`);
 });
 
 app.listen(PORT, () => {
