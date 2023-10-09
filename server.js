@@ -32,28 +32,6 @@ const calendar = google.calendar({
   auth: oauth2client,
 });
 
-app.get("/", (req, res) => {
-  res.send({ msg: "Hello World" });
-});
-
-app.post("/generateTokens", async (req, res) => {
-  try {
-    const code = Object.entries(req.body)[0][0];
-    const { tokens } = await oauth2client.getToken(code);
-
-    res.cookie("access_token", tokens.access_token, {
-      httpOnly: true,
-    });
-    res.cookie("refresh_token", tokens.refresh_token, { httpOnly: true });
-    res.cookie("expiry_date", tokens.expiry_date, { httpOnly: true });
-
-    res.status(200).send({ success: true });
-  } catch (error) {
-    console.log("Server Error", error);
-    res.status(500).send({ success: false, error: "Server Error!" });
-  }
-});
-
 app.get("/check-signin", async (req, res) => {
   try {
     const access_token = req.cookies["access_token"];
@@ -74,7 +52,7 @@ app.get("/check-signin", async (req, res) => {
   }
 });
 
-app.get("/generateAuthUrl", (req, res) => {
+app.get("/generateAuthUrl", (_req, res) => {
   const url = oauth2client.generateAuthUrl({
     access_type: "offline",
     scope: scopes,
@@ -83,7 +61,7 @@ app.get("/generateAuthUrl", (req, res) => {
   res.send(url);
 });
 
-app.post("/get-events", async (req, res) => {
+app.post("/get-events", async (_req, res) => {
   try {
     const response = await calendar.events.list({
       calendarId: "primary",
@@ -96,6 +74,24 @@ app.post("/get-events", async (req, res) => {
     res.send({ msg: "You have logged in succesfully.", events });
   } catch (error) {
     console.log(error);
+  }
+});
+
+app.post("/generateTokens", async (_req, res) => {
+  try {
+    const code = Object.entries(req.body)[0][0];
+    const { tokens } = await oauth2client.getToken(code);
+
+    res.cookie("access_token", tokens.access_token, {
+      httpOnly: true,
+    });
+    res.cookie("refresh_token", tokens.refresh_token, { httpOnly: true });
+    res.cookie("expiry_date", tokens.expiry_date, { httpOnly: true });
+
+    res.status(200).send({ success: true });
+  } catch (error) {
+    console.log("Server Error", error);
+    res.status(500).send({ success: false, error: "Server Error!" });
   }
 });
 
