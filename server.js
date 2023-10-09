@@ -5,10 +5,16 @@ import express from "express";
 import { google } from "googleapis";
 import cors from "cors";
 import bodyParser from "body-parser";
+import cookieParser from "cookie-parser";
 
 const app = express();
-app.use(cors());
-// app.use(express.json());
+app.use(cookieParser());
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+  })
+);
 app.use(bodyParser.urlencoded({ extended: false }));
 
 const PORT = process.env.NODE_PORT || 8000;
@@ -30,7 +36,45 @@ app.get("/", (req, res) => {
   res.send({ msg: "Hello World" });
 });
 
-app.get("/google", (req, res) => {
+app.post("/generateTokens", async (req, res) => {
+  try {
+    const code = Object.entries(req.body)[0][0];
+    const { tokens } = await oauth2client.getToken(code);
+
+    res.cookie("access_token", tokens.access_token, {
+      httpOnly: true,
+    });
+    res.cookie("refresh_token", tokens.refresh_token, { httpOnly: true });
+    res.cookie("expiry_date", tokens.expiry_date, { httpOnly: true });
+
+    res.status(200).send({ success: true });
+  } catch (error) {
+    console.log("Server Error", error);
+    res.status(500).send({ success: false, error: "Server Error!" });
+  }
+});
+
+app.get("/check-signin", async (req, res) => {
+  try {
+    const access_token = req.cookies["access_token"];
+    const expiry_date = req.cookies["expiry_date"];
+    const refresh_token = req.cookies["refresh_token"];
+
+    if (access_token && expiry_date && refresh_token) {
+      const tokens = {
+        access_token,
+        refresh_token,
+        expiry_date,
+      };
+      oauth2client.setCredentials(tokens);
+      res.send({ signedIn: true });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+app.get("/generateAuthUrl", (req, res) => {
   const url = oauth2client.generateAuthUrl({
     access_type: "offline",
     scope: scopes,
@@ -41,21 +85,15 @@ app.get("/google", (req, res) => {
 
 app.post("/get-events", async (req, res) => {
   try {
-    const code = Object.entries(req.body)[0][0];
-    if (code) {
-      const { tokens } = await oauth2client.getToken(code);
-      oauth2client.setCredentials(tokens);
-      console.log(tokens);
-      const response = await calendar.events.list({
-        calendarId: "primary",
-        timeMin: new Date().toISOString(),
-        maxResults: 10,
-        singleEvents: true,
-        orderBy: "startTime",
-      });
-      const events = response.data.items;
-      res.send({ msg: "You have logged in succesfully.", events });
-    }
+    const response = await calendar.events.list({
+      calendarId: "primary",
+      timeMin: new Date().toISOString(),
+      maxResults: 10,
+      singleEvents: true,
+      orderBy: "startTime",
+    });
+    const events = response.data.items;
+    res.send({ msg: "You have logged in succesfully.", events });
   } catch (error) {
     console.log(error);
   }
