@@ -77,7 +77,7 @@ app.post("/get-events", async (_req, res) => {
   }
 });
 
-app.post("/generateTokens", async (_req, res) => {
+app.post("/generateTokens", async (req, res) => {
   try {
     const code = Object.entries(req.body)[0][0];
     const { tokens } = await oauth2client.getToken(code);
