@@ -37,24 +37,6 @@ app.get("/", (_req, res) => {
   res.send("Everything working fine!");
 });
 
-app.get("/check-signin", async (req, res) => {
-  try {
-    if (req.cookies) {
-      // const access_token = req.cookies["access_token"];
-      // const expiry_date = req.cookies["expiry_date"];
-      // const refresh_token = req.cookies["refresh_token"];
-
-      // if (access_token && expiry_date && refresh_token) {
-      res.send({ signedIn: true });
-      // }
-    }
-    res.send({ signedIn: false });
-  } catch (error) {
-    console.log({ checkSignin: error });
-    res.send("Server Error!");
-  }
-});
-
 app.get("/generateAuthUrl", (_req, res) => {
   const url = oauth2client.generateAuthUrl({
     access_type: "offline",
@@ -96,12 +78,6 @@ app.post("/generateTokens", async (req, res) => {
   try {
     const code = Object.entries(req.body)[0][0];
     const { tokens } = await oauth2client.getToken(code);
-
-    // res.cookie("access_token", tokens.access_token, {
-    //   httpOnly: true,
-    // });
-    // res.cookie("refresh_token", tokens.refresh_token, { httpOnly: true });
-    // res.cookie("expiry_date", tokens.expiry_date, { httpOnly: true });
     res.status(200).send({ success: true, tokens });
   } catch (error) {
     res.status(500).send({ success: false, error: "Server Error!" });
