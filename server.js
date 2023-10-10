@@ -51,7 +51,9 @@ app.get("/check-signin", async (req, res) => {
       oauth2client.setCredentials(tokens);
       res.send({ signedIn: true });
     }
+    res.send({ signedIn: false });
   } catch (error) {
+    res.send("Server Error!");
     console.log(error);
   }
 });
