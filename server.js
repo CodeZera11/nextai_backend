@@ -15,6 +15,7 @@ app.use(
     credentials: true,
   })
 );
+app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
 const PORT = process.env.NODE_PORT || 8000;
@@ -38,23 +39,19 @@ app.get("/", (_req, res) => {
 
 app.get("/check-signin", async (req, res) => {
   try {
-    const access_token = req.cookies["access_token"];
-    const expiry_date = req.cookies["expiry_date"];
-    const refresh_token = req.cookies["refresh_token"];
+    if (req.cookies) {
+      // const access_token = req.cookies["access_token"];
+      // const expiry_date = req.cookies["expiry_date"];
+      // const refresh_token = req.cookies["refresh_token"];
 
-    if (access_token && expiry_date && refresh_token) {
-      const tokens = {
-        access_token,
-        refresh_token,
-        expiry_date,
-      };
-      oauth2client.setCredentials(tokens);
+      // if (access_token && expiry_date && refresh_token) {
       res.send({ signedIn: true });
+      // }
     }
     res.send({ signedIn: false });
   } catch (error) {
+    console.log({ checkSignin: error });
     res.send("Server Error!");
-    console.log(error);
   }
 });
 
@@ -67,19 +64,31 @@ app.get("/generateAuthUrl", (_req, res) => {
   res.send(url);
 });
 
-app.post("/get-events", async (_req, res) => {
+app.post("/get-events", async (req, res) => {
   try {
-    const response = await calendar.events.list({
-      calendarId: "primary",
-      timeMin: new Date().toISOString(),
-      maxResults: 10,
-      singleEvents: true,
-      orderBy: "startTime",
-    });
-    const events = response.data.items;
-    res.send({ msg: "You have logged in succesfully.", events });
+    const { access_token, expiry_date, refresh_token } = req.body;
+
+    if (access_token && expiry_date && refresh_token) {
+      const tokens = {
+        access_token,
+        refresh_token,
+        expiry_date,
+      };
+      oauth2client.setCredentials(tokens);
+
+      const response = await calendar.events.list({
+        calendarId: "primary",
+        timeMin: new Date().toISOString(),
+        maxResults: 10,
+        singleEvents: true,
+        orderBy: "startTime",
+      });
+      const events = response.data.items;
+      res.send({ msg: "You have logged in succesfully.", events });
+    }
+    res.send({ msg: "Unable to find tokens" });
   } catch (error) {
-    console.log(error);
+    console.log({ getEvents: error });
   }
 });
 
@@ -88,15 +97,13 @@ app.post("/generateTokens", async (req, res) => {
     const code = Object.entries(req.body)[0][0];
     const { tokens } = await oauth2client.getToken(code);
 
-    res.cookie("access_token", tokens.access_token, {
-      httpOnly: true,
-    });
-    res.cookie("refresh_token", tokens.refresh_token, { httpOnly: true });
-    res.cookie("expiry_date", tokens.expiry_date, { httpOnly: true });
-
-    res.status(200).send({ success: true });
+    // res.cookie("access_token", tokens.access_token, {
+    //   httpOnly: true,
+    // });
+    // res.cookie("refresh_token", tokens.refresh_token, { httpOnly: true });
+    // res.cookie("expiry_date", tokens.expiry_date, { httpOnly: true });
+    res.status(200).send({ success: true, tokens });
   } catch (error) {
-    console.log("Server Error", error);
     res.status(500).send({ success: false, error: "Server Error!" });
   }
 });
