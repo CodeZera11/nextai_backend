@@ -32,6 +32,10 @@ const calendar = google.calendar({
   auth: oauth2client,
 });
 
+app.get("/", (_req, res) => {
+  res.send("Everything working fine!");
+});
+
 app.get("/check-signin", async (req, res) => {
   try {
     const access_token = req.cookies["access_token"];
